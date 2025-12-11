@@ -12,7 +12,7 @@ let ai: GoogleGenerativeAI;
 try {
   ai = new GoogleGenerativeAI(apiKey);
 } catch (e) {
-  console.error("Failed to initialize GoogleGenAI. Check API_KEY.", e);
+  console.error("Failed to initialize GoogleGenerativeAI. Check API_KEY.", e);
 }
 
 export async function generateGachaItinerary(
