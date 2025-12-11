@@ -1,15 +1,18 @@
-import { GoogleGenAI, Tool } from '@google/genai';
+import { GoogleGenerativeAI, Tool } from '@google/generative-ai';
 import { GachaResponse, GroundingChunk } from '../types';
 import { SYSTEM_INSTRUCTION } from '../constants';
 
+// Type declaration for process.env (injected by Vite)
+declare const process: { env: { API_KEY?: string } };
+
 // Safely initialize. If API_KEY is missing, it might throw later, but won't crash the module load.
 const apiKey = process.env.API_KEY || '';
-let ai: GoogleGenAI;
+let ai: GoogleGenerativeAI;
 
 try {
-  ai = new GoogleGenAI({ apiKey });
+  ai = new GoogleGenerativeAI(apiKey);
 } catch (e) {
-  console.error("Failed to initialize GoogleGenAI. Check API_KEY.", e);
+  console.error("Failed to initialize GoogleGenerativeAI. Check API_KEY.", e);
 }
 
 export async function generateGachaItinerary(
@@ -25,7 +28,7 @@ export async function generateGachaItinerary(
   }
 
   const tools: Tool[] = [
-    { googleSearch: {} } // Use Google Search for verification
+    { googleSearchRetrieval: {} } // Use Google Search for verification
   ];
 
   // We add a random seed aspect or instructions to avoid duplicates
@@ -47,18 +50,19 @@ export async function generateGachaItinerary(
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        // responseMimeType: 'application/json', // Removed because it conflicts with googleSearch tool
-        tools: tools,
+    const model = ai.getGenerativeModel({
+      model: 'gemini-2.0-flash-exp',
+      systemInstruction: SYSTEM_INSTRUCTION,
+      tools: tools,
+      generationConfig: {
         temperature: 0.9, // High creativity for Gacha
-      },
+      }
     });
 
-    let text = response.text;
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+
+    let text = response.text();
     if (!text) {
       throw new Error("No response generated");
     }
