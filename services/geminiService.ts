@@ -30,6 +30,8 @@ export async function generateGachaItinerary(
     Task:
     Generate a JSON itinerary following the System Instructions. 
     Make sure to verify existence with Google Search.
+    
+    IMPORTANT: Return raw JSON only. Do not use Markdown formatting.
   `;
 
   try {
@@ -38,15 +40,23 @@ export async function generateGachaItinerary(
       contents: prompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        responseMimeType: 'application/json',
+        // responseMimeType: 'application/json', // Removed because it conflicts with googleSearch tool
         tools: tools,
         temperature: 0.9, // High creativity for Gacha
       },
     });
 
-    const text = response.text;
+    let text = response.text;
     if (!text) {
       throw new Error("No response generated");
+    }
+
+    // Clean up markdown code blocks if present (Gemini often adds them even if asked not to)
+    text = text.trim();
+    if (text.startsWith('```json')) {
+      text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (text.startsWith('```')) {
+      text = text.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
 
     const data = JSON.parse(text) as GachaResponse;
