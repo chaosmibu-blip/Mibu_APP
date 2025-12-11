@@ -2,7 +2,15 @@ import { GoogleGenAI, Tool } from '@google/genai';
 import { GachaResponse, GroundingChunk } from '../types';
 import { SYSTEM_INSTRUCTION } from '../constants';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Safely initialize. If API_KEY is missing, it might throw later, but won't crash the module load.
+const apiKey = process.env.API_KEY || '';
+let ai: GoogleGenAI;
+
+try {
+  ai = new GoogleGenAI({ apiKey });
+} catch (e) {
+  console.error("Failed to initialize GoogleGenAI. Check API_KEY.", e);
+}
 
 export async function generateGachaItinerary(
   country: string,
@@ -12,6 +20,10 @@ export async function generateGachaItinerary(
   collectedNames: string[] = []
 ): Promise<{ data: GachaResponse; sources: GroundingChunk[] }> {
   
+  if (!apiKey || !ai) {
+    throw new Error("API Key is missing or invalid. Please check your settings.");
+  }
+
   const tools: Tool[] = [
     { googleSearch: {} } // Use Google Search for verification
   ];
